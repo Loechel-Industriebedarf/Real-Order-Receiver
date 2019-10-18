@@ -1,0 +1,5 @@
+{
+    "require": {
+        "hitmeister/api-sdk": "^1.33"
+    }
+}

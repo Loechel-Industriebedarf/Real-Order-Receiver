@@ -1,0 +1,13 @@
+# IDE
+.idea
+
+# PHP Unit
+build/
+
+# Composer
+composer.phar
+vendor/
+composer.lock
+
+# Local test
+local.php
