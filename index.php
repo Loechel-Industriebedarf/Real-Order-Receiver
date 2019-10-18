@@ -25,13 +25,16 @@ function getNewOrders($client){
 	$now = gmdate("Y-m-d\TH:i:s", time());
 	
 	foreach ($client->orderUnits()->find() as $orderUnit) {
-		$ts_created = $orderUnit->ts_created;
+		$last_order_date = $orderUnit->ts_created;
 		$last_execution = file_get_contents('last.txt');
+		$last_execution_date = new DateTime($last_execution);
 		
 		
-		echo $ts_created . "<br>" . $last_execution . "<br>" . $now;
+		echo "LAST ORDER: " . $last_order_date . 
+		"<br>LAST EXECUTION: " . $last_execution_date . 
+		"<br>CURRENT TIME: " . $now . "<br>";
 		
-		if($ts_created == "asdf"){
+		if($last_order_date > $last_execution_date){
 			$price = $orderUnit->price;
 			$revenue_gross = $orderUnit->revenue_gross;
 			$costs = $price - $revenue_gross;
