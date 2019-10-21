@@ -66,7 +66,7 @@ function getNewOrders($client){
 			
 			$price = $orderUnit->price / 100;
 			$revenue_gross = $orderUnit->revenue_gross / 100;
-			$costs = $price + ($shipping_costs / 119 * 100) - $revenue_gross; //Costs are weird, if shipping is included. Need to watch on future orders.
+			$costs = $price + $shipping_costs - $revenue_gross; 
 			
 			//echo $price . " " . $revenue_gross . " " . $shipping_costs . " ".$costs . "<br>";
 			
@@ -102,13 +102,15 @@ function getNewOrders($client){
 			*  Real seems to send each product as one position, and adds the shipping to the last. 
 			*  Our ERP system doesn't like this. It wants shipping at all positions or a seperate shipping position.
 			*  Sooo... We create an extra shipping position.
+			*  Also the costs get set to 0
 			*/
 			$shipping = 0; 
-			if($shipping_costs > 0) { $shipping = 1;}
+			if($shipping_costs > 0) { $shipping = 1; }
 			for($i = 0; $i <= $shipping; $i++){
 				if($i == 1){
 					$article_number = "VERSAND-1955_LAGER";
 					$price = $shipping_costs;
+					$costs = 0;
 				}
 				array_push($order, array(
 				$orderUnit->buyer->email,
