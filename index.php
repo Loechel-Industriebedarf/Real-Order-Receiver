@@ -22,44 +22,50 @@
 function getNewOrders($client){
 	$order = array();
 
-	$now = gmdate("Y-m-d\TH:i:s", time()+7200);
+	date_default_timezone_set("Europe/Berlin");
+	$now = gmdate("Y-m-d\TH:i:s", time()+3600);
 	
 	//Push headline
-			array_push($order, array(
-				'Mail',
-				'Bestellungs-ID',
-				'Rechnungsfirma 1',
-				'Fechnungsfirma 2',
-				'Rechnungsstrasse',
-				'RechnungsPLZ',
-				'Rechnungsort',
-				'Rechnungsland',
-				'Rechnungstelefon',
-				'Versandfirma 1',
-				'Versandfirma 2',
-				'Versandstrasse',
-				'VersandPLZ',
-				'Versandort',
-				'Versandland',
-				'Versandtelefon',
-				'Artikelnummer',
-				'Preis',
-				'Versandkosten',
-				'Nebenkosten',
-				'Notiz',
-				'ID_OFFER???',
-				'ID_ORDER_UNIT???'
-			));	
+	array_push($order, array(
+		'Mail',
+		'Bestellungs-ID',
+		'Rechnungsfirma 1',
+		'Rechnungsfirma 2',
+		'Rechnungsstrasse',
+		'RechnungsPLZ',
+		'Rechnungsort',
+		'Rechnungsland',
+		'Rechnungstelefon',
+		'Versandfirma 1',
+		'Versandfirma 2',
+		'Versandstrasse',
+		'VersandPLZ',
+		'Versandort',
+		'Versandland',
+		'Versandtelefon',
+		'Artikelnummer',
+		'Preis',
+		'Versandkosten',
+		'Nebenkosten',
+		'Notiz',
+		'ID_OFFER???',
+		'ID_ORDER_UNIT???'
+	));	
 	
+	$i = true;
+	$writeLast = false;
 	foreach ($client->orderUnits()->find() as $orderUnit) {
 		$last_order_date = date_create($orderUnit->ts_created);
 		$last_execution = file_get_contents('last.txt');
 		$last_execution_date = new DateTime($last_execution);
 		
+		if($i){
+			echo "LAST ORDER: " . $last_order_date->format('Y-m-d H:i:s') . 
+			" | LAST EXECUTION: " . $last_execution_date->format('Y-m-d H:i:s') . 
+			" | CURRENT TIME: " . $now;
+			$i = false;
+		}
 		
-		echo "LAST ORDER: " . $last_order_date->format('Y-m-d H:i:s') . 
-		"<br>LAST EXECUTION: " . $last_execution_date->format('Y-m-d H:i:s') . 
-		"<br>CURRENT TIME: " . $now . "<br><br>";
 		
 		if($last_order_date > $last_execution_date){
 			$shipping_costs = $orderUnit->shipping_rate / 100;
@@ -74,27 +80,27 @@ function getNewOrders($client){
 			
 			$article_number = $orderUnit->id_offer;
 			
-			$billing_street = $orderUnit->billing_address->street . $orderUnit->billing_address->house_number;
-			$shipping_street = $orderUnit->shipping_address->street . $orderUnit->shipping_address->house_number;
+			$billing_street = $orderUnit->billing_address->street . " " . $orderUnit->billing_address->house_number;
+			$shipping_street = $orderUnit->shipping_address->street . " " .  $orderUnit->shipping_address->house_number;
 			
 			$billing_company_name = $orderUnit->billing_address->company_name;
 			if($billing_company_name == ""){
-				$billing_firm1 = $orderUnit->billing_address->first_name . $orderUnit->billing_address->last_name;
+				$billing_firm1 = $orderUnit->billing_address->first_name . " " . $orderUnit->billing_address->last_name;
 				$billing_firm2 = "";
 			}
 			else{
 				$billing_firm1 = $billing_company_name;
-				$billing_firm2 = $orderUnit->billing_address->first_name . $orderUnit->billing_address->last_name;
+				$billing_firm2 = $orderUnit->billing_address->first_name . " " .  $orderUnit->billing_address->last_name;
 			}
 			
 			$shipping_company_name = $orderUnit->shipping_address->company_name;
 			if($shipping_company_name == ""){
-				$shipping_firm1 = $orderUnit->shipping_address->first_name . $orderUnit->shipping_address->last_name;
+				$shipping_firm1 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
 				$shipping_firm2 = "";
 			}
 			else{
-				$billing_firm1 = $shipping_company_name;
-				$billing_firm2 = $orderUnit->shipping_address->first_name . $orderUnit->shipping_address->last_name;
+				$shipping_firm1 = $shipping_company_name;
+				$shipping_firm2 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
 			}
 			  
 
@@ -137,15 +143,18 @@ function getNewOrders($client){
 				$orderUnit->item->id_item,
 				$orderUnit->id_order_unit
 			));
-			}
+			}			
 			
-			
-			writeToCsv($order);
-			
-		}		
+			writeToCsv($order);	
+			$writeLast = true;
+		}			
+				
 	}
 	
-	writeLast($now);
+	if($writeLast){
+		writeLast($now);
+	}
+	
 }   
    
    
