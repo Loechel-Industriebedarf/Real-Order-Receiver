@@ -79,7 +79,7 @@ function getNewOrders($client){
 				
 				$price = $orderUnit->price / 100;
 				$revenue_gross = $orderUnit->revenue_gross / 100;
-				$costs = $price + $shipping_costs - $revenue_gross; 
+				$costs = ($price + $shipping_costs - $revenue_gross) / 119 * 100; 
 				
 				//echo $price . " " . $revenue_gross . " " . $shipping_costs . " ".$costs . "<br>";
 				
@@ -150,7 +150,7 @@ function getNewOrders($client){
 						$costs,
 						$orderUnit->note,
 						$orderUnit->item->id_item,
-						$orderUnit->id_order_unit,
+						intval($orderUnit->id_order_unit),
 						$last_order_date->format('Y-m-d H:i:s'),
 						$now
 					));
