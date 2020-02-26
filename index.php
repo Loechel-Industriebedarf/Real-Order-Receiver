@@ -48,9 +48,10 @@ function getNewOrders($client){
 		'Versandkosten',
 		'Nebenkosten',
 		'Notiz',
-		'ID_OFFER???',
-		'ID_ORDER_UNIT???',
+		'ID_OFFER',
+		'ID_ORDER_UNIT',
 		'Bestellzeitpunkt',
+		'Updatezeitpunkt',
 		'Abholzeitpunkt'
 	));	
 	
@@ -62,11 +63,13 @@ function getNewOrders($client){
 	
 	foreach ($client->orderUnits()->find() as $orderUnit) {
 		try{
-			$last_order_date = date_create($orderUnit->ts_updated); //ts_created sometimes outputs a wrong date (in the past) somehow? ts_updated seems to work better.
+			$last_order_date = date_create($orderUnit->ts_created); //ts_created sometimes outputs a wrong date (in the past) somehow? ts_updated seems to work better.
+			$last_order_update = date_create($orderUnit->ts_updated); 
 		
 			//Write a little log line
 			if($writeLog){
 				echo "LAST ORDER: " . $last_order_date->format('Y-m-d H:i:s') . 
+				" | LAST ORDER UPDATE: " . $last_order_update->format('Y-m-d H:i:s') . 
 				" | LAST EXECUTION: " . $last_execution_date->format('Y-m-d H:i:s') . 
 				" | CURRENT TIME: " . $now .
 				" - ";
@@ -74,8 +77,9 @@ function getNewOrders($client){
 			}
 			
 			//If the orders is more recent than the last execution date, download it and write it to a csv file later on
-			if($last_order_date > $last_execution_date){
-				$shipping_costs = $orderUnit->shipping_rate / 100;
+			if($last_order_update > $last_execution_date){
+				if($last_order_date > $last_order_update->modify("-1 day")){
+					$shipping_costs = $orderUnit->shipping_rate / 100;
 				
 				$price = $orderUnit->price / 100;
 				$revenue_gross = $orderUnit->revenue_gross / 100;
@@ -152,11 +156,13 @@ function getNewOrders($client){
 						$orderUnit->item->id_item,
 						intval($orderUnit->id_order_unit),
 						$last_order_date->format('Y-m-d H:i:s'),
+						$last_order_update->format('Y-m-d H:i:s'),
 						$now
 					));
 				}			
 					
-				$newOrders++;
+				$newOrders++;				
+				}
 			}
 			else{
 				//No new orders, so no need to cycle throught the rest of them
@@ -183,7 +189,7 @@ function getNewOrders($client){
    
    
 function writeToCsv($order){
-	$fp = fopen('realOrder.csv', 'w');
+	$fp = fopen('../realOrder.csv', 'w');
 	for ($i = 0; $i < count($order); $i++) {
 		fputcsv($fp, $order[$i], ';');
 	}
