@@ -62,6 +62,12 @@ function getNewOrders($client){
 	$last_execution_date = new DateTime($last_execution);
 	
 	foreach ($client->orderUnits()->find() as $orderUnit) {
+		/*
+		echo "<pre>";
+		var_dump($orderUnit);
+		echo "</pre>";
+		*/
+		
 		try{
 			$last_order_date = date_create($orderUnit->ts_created); //ts_created sometimes outputs a wrong date (in the past) somehow? ts_updated seems to work better.
 			$last_order_update = date_create($orderUnit->ts_updated); 
@@ -75,93 +81,94 @@ function getNewOrders($client){
 				" - ";
 				$writeLog = false;
 			}
-			
+						
 			//If the orders is more recent than the last execution date, download it and write it to a csv file later on
-			if($last_order_update > $last_execution_date){
+			if($last_order_update > $last_execution_date && $orderUnit->status !== "sent"){
+				//Don't import old orders again.
 				if($last_order_date > $last_order_update->modify("-1 day")){
 					$shipping_costs = $orderUnit->shipping_rate / 100;
 				
-				$price = $orderUnit->price / 100;
-				$revenue_gross = $orderUnit->revenue_gross / 100;
-				$costs = ($price + $shipping_costs - $revenue_gross) / 119 * 100; 
-				
-				//echo $price . " " . $revenue_gross . " " . $shipping_costs . " ".$costs . "<br>";
-				
-				
-				
-				$article_number = $orderUnit->id_offer;
-				
-				$billing_street = $orderUnit->billing_address->street . " " . $orderUnit->billing_address->house_number;
-				$shipping_street = $orderUnit->shipping_address->street . " " .  $orderUnit->shipping_address->house_number;
-				
-				$billing_company_name = $orderUnit->billing_address->company_name;
-				if($billing_company_name == ""){
-					$billing_firm1 = $orderUnit->billing_address->first_name . " " . $orderUnit->billing_address->last_name;
-					$billing_firm2 = "";
-				}
-				else{
-					$billing_firm1 = $billing_company_name;
-					$billing_firm2 = $orderUnit->billing_address->first_name . " " .  $orderUnit->billing_address->last_name;
-				}
-				
-				$shipping_company_name = $orderUnit->shipping_address->company_name;
-				if($shipping_company_name == ""){
-					$shipping_firm1 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
-					$shipping_firm2 = "";
-				}
-				else{
-					$shipping_firm1 = $shipping_company_name;
-					$shipping_firm2 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
-				}
-				  
-
-				/* 
-				*  Real seems to send each product as one position, and adds the shipping to the last. 
-				*  Our ERP system doesn't like this. It wants shipping at all positions or a seperate shipping position.
-				*  Sooo... We create an extra shipping position.
-				*  Also the costs get set to 0
-				*/
-				$shipping = 0; 
-				if($shipping_costs > 0) { $shipping = 1; }
-				for($i = 0; $i <= $shipping; $i++){
-					//Shipping specific stuff
-					if($i == 1){
-						$article_number = "VERSAND-1955_LAGER";
-						$price = $shipping_costs;
-						$costs = 0;
-					}
-					//Add order to array
-					array_push($order, array(
-						$orderUnit->buyer->email,
-						$orderUnit->id_order,
-						$billing_firm1,
-						$billing_firm2,
-						$billing_street,
-						$orderUnit->billing_address->postcode,
-						$orderUnit->billing_address->city,
-						$orderUnit->billing_address->country,
-						$orderUnit->billing_address->phone,
-						$shipping_firm1,
-						$shipping_firm2,
-						$shipping_street,
-						$orderUnit->shipping_address->postcode,
-						$orderUnit->shipping_address->city,
-						$orderUnit->shipping_address->country,
-						$orderUnit->shipping_address->phone,
-						$article_number,
-						$price,
-						0,
-						$costs,
-						$orderUnit->note,
-						$orderUnit->item->id_item,
-						intval($orderUnit->id_order_unit),
-						$last_order_date->format('Y-m-d H:i:s'),
-						$last_order_update->format('Y-m-d H:i:s'),
-						$now
-					));
-				}			
+					$price = $orderUnit->price / 100;
+					$revenue_gross = $orderUnit->revenue_gross / 100;
+					$costs = ($price + $shipping_costs - $revenue_gross) / 119 * 100; 
 					
-				$newOrders++;				
+					//echo $price . " " . $revenue_gross . " " . $shipping_costs . " ".$costs . "<br>";
+					
+					
+					
+					$article_number = $orderUnit->id_offer;
+					
+					$billing_street = $orderUnit->billing_address->street . " " . $orderUnit->billing_address->house_number;
+					$shipping_street = $orderUnit->shipping_address->street . " " .  $orderUnit->shipping_address->house_number;
+					
+					$billing_company_name = $orderUnit->billing_address->company_name;
+					if($billing_company_name == ""){
+						$billing_firm1 = $orderUnit->billing_address->first_name . " " . $orderUnit->billing_address->last_name;
+						$billing_firm2 = "";
+					}
+					else{
+						$billing_firm1 = $billing_company_name;
+						$billing_firm2 = $orderUnit->billing_address->first_name . " " .  $orderUnit->billing_address->last_name;
+					}
+					
+					$shipping_company_name = $orderUnit->shipping_address->company_name;
+					if($shipping_company_name == ""){
+						$shipping_firm1 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
+						$shipping_firm2 = "";
+					}
+					else{
+						$shipping_firm1 = $shipping_company_name;
+						$shipping_firm2 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
+					}
+					  
+
+					/* 
+					*  Real seems to send each product as one position, and adds the shipping to the last. 
+					*  Our ERP system doesn't like this. It wants shipping at all positions or a seperate shipping position.
+					*  Sooo... We create an extra shipping position.
+					*  Also the costs get set to 0
+					*/
+					$shipping = 0; 
+					if($shipping_costs > 0) { $shipping = 1; }
+					for($i = 0; $i <= $shipping; $i++){
+						//Shipping specific stuff
+						if($i == 1){
+							$article_number = "VERSAND-1955_LAGER";
+							$price = $shipping_costs;
+							$costs = 0;
+						}
+						//Add order to array
+						array_push($order, array(
+							$orderUnit->buyer->email,
+							$orderUnit->id_order,
+							$billing_firm1,
+							$billing_firm2,
+							$billing_street,
+							$orderUnit->billing_address->postcode,
+							$orderUnit->billing_address->city,
+							$orderUnit->billing_address->country,
+							$orderUnit->billing_address->phone,
+							$shipping_firm1,
+							$shipping_firm2,
+							$shipping_street,
+							$orderUnit->shipping_address->postcode,
+							$orderUnit->shipping_address->city,
+							$orderUnit->shipping_address->country,
+							$orderUnit->shipping_address->phone,
+							$article_number,
+							$price,
+							0,
+							$costs,
+							$orderUnit->note,
+							$orderUnit->item->id_item,
+							intval($orderUnit->id_order_unit),
+							$last_order_date->format('Y-m-d H:i:s'),
+							$last_order_update->format('Y-m-d H:i:s'),
+							$now
+						));
+					}			
+					
+					$newOrders++;				
 				}
 			}
 			else{
