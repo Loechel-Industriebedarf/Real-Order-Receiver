@@ -23,7 +23,7 @@ function getNewOrders($client){
 	$order = array();
 
 	date_default_timezone_set("Europe/Berlin");
-	$now = gmdate("Y-m-d\TH:i:s", time()+3600);
+	$now = date("Y-m-d\TH:i:s", time());
 	
 	//Push headline
 	array_push($order, array(
