@@ -10,7 +10,6 @@
 		->build();
 	
 	
-	
 	if(!file_exists($csvPath)){
 		getNewOrders($client);
 	}
@@ -18,7 +17,9 @@
 		echo "CSV file was not processed yet!";
 	}
 
-	
+/*
+
+*/
 function getNewOrders($client){
 	$order = array();
 
@@ -52,7 +53,8 @@ function getNewOrders($client){
 		'ID_ORDER_UNIT',
 		'Bestellzeitpunkt',
 		'Updatezeitpunkt',
-		'Abholzeitpunkt'
+		'Abholzeitpunkt',
+		'Versandkosten'
 	));	
 	
 	$writeLog = true; //If true, it writes a line of log (last order, last execution, current time)
@@ -60,7 +62,18 @@ function getNewOrders($client){
 	
 	$last_execution = file_get_contents('last.txt'); //When was the program last executed?
 	$last_execution_date = new DateTime($last_execution);
+
+	//Getting the shipping costs for each order
+	$shipping_costs_array = array();
+	foreach ($client->orderUnits()->find() as $orderUnit) {
+		$orderNumberShip = $orderUnit->id_order;
+		$shipping_costs_temp = $orderUnit->shipping_rate / 100;
+		if($shipping_costs_temp > 0){ $shipping_costs_order = $shipping_costs_temp; }
+
+		$shipping_costs_array[$orderNumberShip] = $shipping_costs_order;
+	}
 	
+	//Getting the orders
 	foreach ($client->orderUnits()->find() as $orderUnit) {
 		/*
 		echo "<pre>";
@@ -86,7 +99,8 @@ function getNewOrders($client){
 			if($last_order_update > $last_execution_date && $orderUnit->status !== "sent"){
 				//Don't import old orders again.
 				if($last_order_date > $last_order_update->modify("-1 day")){
-					$shipping_costs = $orderUnit->shipping_rate / 100;
+					$orderId = $orderUnit->id_order;
+					$shipping_costs = $shipping_costs_array[$orderId];
 				
 					$price = $orderUnit->price / 100;
 					$revenue_gross = $orderUnit->revenue_gross / 100;
@@ -119,54 +133,37 @@ function getNewOrders($client){
 					else{
 						$shipping_firm1 = $shipping_company_name;
 						$shipping_firm2 = $orderUnit->shipping_address->first_name . " " .  $orderUnit->shipping_address->last_name;
-					}
-					  
+					}	
 
-					/* 
-					*  Real seems to send each product as one position, and adds the shipping to the last. 
-					*  Our ERP system doesn't like this. It wants shipping at all positions or a seperate shipping position.
-					*  Sooo... We create an extra shipping position.
-					*  Also the costs get set to 0
-					*/
-					$shipping = 0; 
-					if($shipping_costs > 0) { $shipping = 1; }
-					for($i = 0; $i <= $shipping; $i++){
-						//Shipping specific stuff
-						if($i == 1){
-							$article_number = "VERSAND-1955_LAGER";
-							$price = $shipping_costs;
-							$costs = 0;
-						}
-						//Add order to array
-						array_push($order, array(
-							$orderUnit->buyer->email,
-							$orderUnit->id_order,
-							$billing_firm1,
-							$billing_firm2,
-							$billing_street,
-							$orderUnit->billing_address->postcode,
-							$orderUnit->billing_address->city,
-							$orderUnit->billing_address->country,
-							$orderUnit->billing_address->phone,
-							$shipping_firm1,
-							$shipping_firm2,
-							$shipping_street,
-							$orderUnit->shipping_address->postcode,
-							$orderUnit->shipping_address->city,
-							$orderUnit->shipping_address->country,
-							$orderUnit->shipping_address->phone,
-							$article_number,
-							$price,
-							0,
-							$costs,
-							$orderUnit->note,
-							$orderUnit->item->id_item,
-							sprintf('%0.0F', $orderUnit->id_order_unit),
-							$last_order_date->format('Y-m-d H:i:s'),
-							$last_order_update->format('Y-m-d H:i:s'),
-							$now
-						));
-					}			
+					array_push($order, array(
+						$orderUnit->buyer->email,
+						$orderId,
+						$billing_firm1,
+						$billing_firm2,
+						$billing_street,
+						$orderUnit->billing_address->postcode,
+						$orderUnit->billing_address->city,
+						$orderUnit->billing_address->country,
+						$orderUnit->billing_address->phone,
+						$shipping_firm1,
+						$shipping_firm2,
+						$shipping_street,
+						$orderUnit->shipping_address->postcode,
+						$orderUnit->shipping_address->city,
+						$orderUnit->shipping_address->country,
+						$orderUnit->shipping_address->phone,
+						$article_number,
+						$price,
+						0,
+						$costs,
+						$orderUnit->note,
+						$orderUnit->item->id_item,
+						sprintf('%0.0F', $orderUnit->id_order_unit),
+						$last_order_date->format('Y-m-d H:i:s'),
+						$last_order_update->format('Y-m-d H:i:s'),
+						$now,
+						$shipping_costs
+					));
 					
 					$newOrders++;				
 				}
