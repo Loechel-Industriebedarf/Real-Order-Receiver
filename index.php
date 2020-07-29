@@ -154,15 +154,14 @@ function getNewOrders($client){
 						$orderUnit->shipping_address->phone,
 						$article_number,
 						$price,
-						0,
+						$shipping_costs,
 						$costs,
 						$orderUnit->note,
 						$orderUnit->item->id_item,
 						sprintf('%0.0F', $orderUnit->id_order_unit),
 						$last_order_date->format('Y-m-d H:i:s'),
 						$last_order_update->format('Y-m-d H:i:s'),
-						$now,
-						$shipping_costs
+						$now
 					));
 					
 					$newOrders++;				
