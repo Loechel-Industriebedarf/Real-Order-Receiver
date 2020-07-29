@@ -11,6 +11,8 @@
 	
 	
 	if(!file_exists($csvPath)){
+echo $csvPath;
+
 		getNewOrders($client);
 	}
 	else{
@@ -68,9 +70,10 @@ function getNewOrders($client){
 	foreach ($client->orderUnits()->find() as $orderUnit) {
 		$orderNumberShip = $orderUnit->id_order;
 		$shipping_costs_temp = $orderUnit->shipping_rate / 100;
-		if($shipping_costs_temp > 0){ $shipping_costs_order = $shipping_costs_temp; }
-
-		$shipping_costs_array[$orderNumberShip] = $shipping_costs_order;
+		if($shipping_costs_temp > 0){ 
+			$shipping_costs_order = $shipping_costs_temp; 
+			$shipping_costs_array[$orderNumberShip] = $shipping_costs_order;
+		}
 	}
 	
 	//Getting the orders
@@ -104,11 +107,9 @@ function getNewOrders($client){
 				
 					$price = $orderUnit->price / 100;
 					$revenue_gross = $orderUnit->revenue_gross / 100;
-					$costs = ($price + $shipping_costs - $revenue_gross) / 119 * 100; 
+					$costs = ($price + $orderUnit->shipping_rate / 100 - $revenue_gross) / 119 * 100; 
 					
-					//echo $price . " " . $revenue_gross . " " . $shipping_costs . " ".$costs . "<br>";
-					
-					
+					//echo "<br><br>" . $price . " " . $revenue_gross . " " . $shipping_costs . " ".$costs . "<br>";
 					
 					$article_number = $orderUnit->id_offer;
 					
